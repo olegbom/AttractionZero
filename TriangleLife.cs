@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using BenchmarkDotNet.Attributes;
 using Raylib_cs;
 
 namespace AttractionZero;
@@ -14,6 +15,12 @@ public class TriangleLife
 
     public int Width { get; }
     public int Height { get; }
+
+
+    public TriangleLife() : this(1000, 1000)
+    {
+
+    }
 
     public TriangleLife(int width, int height)
     {
@@ -41,17 +48,13 @@ public class TriangleLife
         return (field[byteIndex] & (1 << bitIndex)) != 0;
     }
 
-    private void SetPixel(byte[] field, int i, int j, bool value)
+    
+    private void SetPixel(byte[] field, int i, int j)
     {
-        if (i < 0 || i >= Width || j < 0 || j >= Height)
-            return;
         int index = i * Height + j;
         int byteIndex = index / 8;
         int bitIndex = index % 8;
-        if (value)
-            field[byteIndex] |= (byte)(1 << bitIndex);
-        else
-            field[byteIndex] &= (byte)~(1 << bitIndex);
+        field[byteIndex] |= (byte)(1 << bitIndex);
     }
 
     public void Draw()
@@ -83,6 +86,7 @@ public class TriangleLife
                 }
                 else
                 {
+                    
                     // Raylib.DrawTriangleLines(a, b, c, Color.BLACK);
                 }
             }
@@ -90,6 +94,10 @@ public class TriangleLife
             
     }
 
+    public void Reset()
+    {
+        Random.Shared.NextBytes(_drawField);
+    }
     public void Step()
     {
         Array.Fill(_backField, (byte)0);
@@ -98,18 +106,19 @@ public class TriangleLife
             for (int j = 0; j < Height; j++)
             {
                 int s = 0;
+
+                if (GetPixel(_drawField, i - 1, j)) s += 12;
+                if (GetPixel(_drawField, i + 1, j)) s += 12;
+                if (GetPixel(_drawField, i - 1, j - 1)) s += 4;
+                if (GetPixel(_drawField, i + 1, j - 1)) s += 4;
+                if (GetPixel(_drawField, i - 2, j)) s += 4;
+                if (GetPixel(_drawField, i + 2, j)) s += 4;
+                if (GetPixel(_drawField, i - 1, j + 1)) s += 4;
+                if (GetPixel(_drawField, i + 1, j + 1)) s += 4;
+
                 if ((i + j) % 2 == 0)
                 {
-                    if (GetPixel(_drawField, i - 1, j)) s += 12;
-                    if (GetPixel(_drawField, i + 1, j)) s += 12;
                     if (GetPixel(_drawField, i, j + 1)) s += 12;
-                        
-                    if (GetPixel(_drawField, i - 1, j - 1)) s += 4;
-                    if (GetPixel(_drawField, i + 1, j - 1)) s += 4;
-                    if (GetPixel(_drawField, i - 2, j)) s += 4;
-                    if (GetPixel(_drawField, i + 2, j)) s += 4;
-                    if (GetPixel(_drawField, i - 1, j + 1)) s += 4;
-                    if (GetPixel(_drawField, i + 1, j + 1)) s += 4;
 
                     if (GetPixel(_drawField, i, j - 1)) s += 3;
                     if (GetPixel(_drawField, i - 2, j + 1)) s += 3;
@@ -117,16 +126,7 @@ public class TriangleLife
                 }
                 else
                 {
-                    if (GetPixel(_drawField, i - 1, j)) s += 12;
-                    if (GetPixel(_drawField, i + 1, j)) s += 12;
                     if (GetPixel(_drawField, i, j - 1)) s += 12;
-
-                    if (GetPixel(_drawField, i - 1, j - 1)) s += 4;
-                    if (GetPixel(_drawField, i + 1, j - 1)) s += 4;
-                    if (GetPixel(_drawField, i - 2, j)) s += 4;
-                    if (GetPixel(_drawField, i + 2, j)) s += 4;
-                    if (GetPixel(_drawField, i - 1, j + 1)) s += 4;
-                    if (GetPixel(_drawField, i + 1, j + 1)) s += 4;
 
                     if (GetPixel(_drawField, i, j + 1)) s += 3;
                     if (GetPixel(_drawField, i - 2, j - 1)) s += 3;
@@ -136,16 +136,78 @@ public class TriangleLife
                 if (GetPixel(_drawField, i, j))
                 {
                     if (s > 13 && s < 32)
-                        SetPixel(_backField, i, j, true);
+                        SetPixel(_backField, i, j);
                 }
                 else
                 {
                     if (s > 21 && s < 32)
-                        SetPixel(_backField, i, j, true);
+                        SetPixel(_backField, i, j);
                 }
             }
         }
 
         Flip();
+    }
+
+    public void ParallelStep()
+    {
+        Array.Fill(_backField, (byte)0);
+        Parallel.For(0, Width, (i) =>
+        {
+            for (int j = 0; j < Height; j++)
+            {
+                int s = 0;
+                if (GetPixel(_drawField, i - 1, j)) s += 12;
+                if (GetPixel(_drawField, i + 1, j)) s += 12;
+                if (GetPixel(_drawField, i - 1, j - 1)) s += 4;
+                if (GetPixel(_drawField, i + 1, j - 1)) s += 4;
+                if (GetPixel(_drawField, i - 2, j)) s += 4;
+                if (GetPixel(_drawField, i + 2, j)) s += 4;
+                if (GetPixel(_drawField, i - 1, j + 1)) s += 4;
+                if (GetPixel(_drawField, i + 1, j + 1)) s += 4;
+
+                if ((i + j) % 2 == 0)
+                {
+                    if (GetPixel(_drawField, i, j + 1)) s += 12;
+
+                    if (GetPixel(_drawField, i, j - 1)) s += 3;
+                    if (GetPixel(_drawField, i - 2, j + 1)) s += 3;
+                    if (GetPixel(_drawField, i + 2, j + 1)) s += 3;
+                }
+                else
+                {
+                    if (GetPixel(_drawField, i, j - 1)) s += 12;
+
+                    if (GetPixel(_drawField, i, j + 1)) s += 3;
+                    if (GetPixel(_drawField, i - 2, j - 1)) s += 3;
+                    if (GetPixel(_drawField, i + 2, j - 1)) s += 3;
+                }
+
+                if (GetPixel(_drawField, i, j))
+                {
+                    if (s > 13 && s < 32)
+                        SetPixel(_backField, i, j);
+                }
+                else
+                {
+                    if (s > 21 && s < 32)
+                        SetPixel(_backField, i, j);
+                }
+            }
+        });
+
+        Flip();
+    }
+
+
+    [Benchmark]
+    public void NaiveBenchmark()
+    {
+        Step();
+    }
+    [Benchmark]
+    public void ParallelBenchmark()
+    {
+        ParallelStep();
     }
 }

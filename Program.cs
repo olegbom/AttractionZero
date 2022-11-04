@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Runtime.CompilerServices;
+using BenchmarkDotNet.Running;
 using Raylib_cs;
 
 namespace AttractionZero
@@ -8,6 +9,8 @@ namespace AttractionZero
     {
         static void Main(string[] args)
         {
+            //var summary = BenchmarkRunner.Run<TriangleLife>();
+
             TriangleLife ts = new(25*5, 12*5);
             Raylib.SetConfigFlags(ConfigFlags.FLAG_MSAA_4X_HINT);
 
@@ -15,11 +18,11 @@ namespace AttractionZero
             bool isEveryFrame = false;
             while (!Raylib.WindowShouldClose())
             {
-                if (Raylib.IsKeyPressed(KeyboardKey.KEY_S)) ts.Step();
+                if (Raylib.IsKeyPressed(KeyboardKey.KEY_S)) ts.ParallelStep();
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_P)) isEveryFrame = !isEveryFrame;
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_SPACE)) ts = new(25 * 5, 12 * 5);
                 
-                if (isEveryFrame) ts.Step();
+                if (isEveryFrame) ts.ParallelStep();
                 
                 Raylib.BeginDrawing();
                
