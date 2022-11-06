@@ -225,7 +225,7 @@ public class TriangleLife
         Flip();
     }
 
-    private HashSet<int> _indexValues = new HashSet<int>();
+    
     public void MatrixStep()
     {
         Array.Fill(_backField, (byte)0);
@@ -256,7 +256,7 @@ public class TriangleLife
     }
 
 
-
+    private object _lockobject = new object();
     public void ParallelStep()
     {
         Array.Fill(_backField, (byte)0);
@@ -275,7 +275,10 @@ public class TriangleLife
                 int bitIndex = index % 8;
                 if ((_solveMatrix[byteIndex] & (1 << bitIndex)) != 0)
                 {
-                    SetPixel(_backField, i, j);
+                    lock (_lockobject)
+                    {
+                        SetPixel(_backField, i, j);
+                    }
                 }
             }
         });
