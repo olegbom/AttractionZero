@@ -6,12 +6,12 @@ namespace AttractionZero;
 
 public class TriangleLife
 {
-    private static byte[] _solveMatrix;
+    private static readonly byte[] SolveMatrix;
 
     static TriangleLife()
     {
         const int numberOfSolutions = (1 << 16);
-        _solveMatrix = new byte[(1 << (16 - 3))];
+        SolveMatrix = new byte[(1 << (16 - 3))];
         for (int i = 0; i < numberOfSolutions; i++)
         {
 
@@ -51,12 +51,12 @@ public class TriangleLife
             if (GetBit(0, 0))
             {
                 if (s > 13 && s < 32)
-                    _solveMatrix[i / 8] |= (byte)(1 << (i % 8));
+                    SolveMatrix[i / 8] |= (byte)(1 << (i % 8));
             }
             else
             {
                 if (s > 21 && s < 32)
-                    _solveMatrix[i / 8] |= (byte)(1 << (i % 8));
+                    SolveMatrix[i / 8] |= (byte)(1 << (i % 8));
             }
         }
     }
@@ -66,12 +66,16 @@ public class TriangleLife
     private uint[] _backField;
     private uint[] _drawField;
 
-    public readonly float TriangleWidthInPixels = 41f/5;
-    public readonly float TriangleHeightInPixels = 71f/5;
+
+
+    public readonly float TriangleWidthInPixels = 41f;
+    public readonly float TriangleHeightInPixels = 71f;
 
 
     public int Width { get; }
     public int Height { get; }
+    public int Generation { get; private set; }
+    public float Scale { get; set; } = 1;
 
 
     public TriangleLife() : this(1000, 1000)
@@ -98,6 +102,7 @@ public class TriangleLife
         }
         
         _backField.CopyTo(_drawField, 0);
+        Generation = 0;
     }
 
     private void Flip() => (_drawField, _backField) = (_backField, _drawField);
@@ -111,6 +116,8 @@ public class TriangleLife
                 Random.Shared.NextBytes(new Span<byte>(ptr, _drawField.Length * 4));
             }
         }
+
+        Generation = 0;
     }
 
     private bool GetPixel(uint[] field, int i, int j)
@@ -118,8 +125,8 @@ public class TriangleLife
         if (i < 0 || i >= Width || j < 0 || j >= Height)
             return false;
         int index = i * Height + j;
-        int wordIndex = index / 32;
-        int bitIndex = index % 32;
+        int wordIndex = index >> 5;
+        int bitIndex = index & 0x1F;
         return (field[wordIndex] & (1 << bitIndex)) != 0;
     }
 
@@ -132,28 +139,48 @@ public class TriangleLife
         Interlocked.Or(ref field[wordIndex], (1u << bitIndex));
     }
 
+    private int GetTwoPixels(uint[] field, int si, int sj)
+    {
+        if (si < 0 || si >= Width) return 0;
+        int startIndex = sj + si * Height;
+        uint startByte = field[startIndex >> 5];
+        int startBitIndex = startIndex & 0x1F;
+        if (startBitIndex < 31)
+        {
+            return (int)((startByte >> startBitIndex) & 0b11);
+        }
+        else
+        {
+            int stopIndex = startIndex + 1;
+            uint stopByte = field[stopIndex >> 5];
+            return (int)(((stopByte << 1) & 0b10) | (startByte >> startBitIndex));
+        }
+    }
+
     private int GetThreePixels(uint[] field, int si, int sj)
     {
         if (si < 0 || si >= Width) return 0;
 
         int startIndex = sj + si * Height;
-        uint startByte = (sj < 0) ? 0 : field[startIndex / 32];
-        int startBitIndex = startIndex % 32;
+        uint startByte = field[startIndex >> 5];
+        int startBitIndex = startIndex & 0x1F;
         if (startBitIndex < 30)
         {
             return (int)((startByte >> startBitIndex) & 0b111);
         }
         else
         {
-            int stopIndex = sj + 2 + si * Height;
-            uint stopByte = (sj + 2 >= Height) ? 0 : field[stopIndex / 32];
+            int stopIndex = startIndex + 2;
+            uint stopByte = field[stopIndex >> 5];
             return (int)(((stopByte << (32 - startBitIndex)) & 0b110) | (startByte >> startBitIndex));
         }
     }
 
+
     public void Draw()
     {
-
+        Raylib.DrawRectangle(0, 0, (int)(TriangleWidthInPixels * Scale * (Width + 1)),
+            (int)(TriangleHeightInPixels * Scale * (Height)), Color.SKYBLUE);
         for (int i = 0; i < Width; i++)
         {
             for (int j = 0; j < Height; j++)
@@ -167,6 +194,7 @@ public class TriangleLife
                     a = center + new Vector2(0, -TriangleHeightInPixels / 2);
                     b = center + new Vector2(-TriangleWidthInPixels, TriangleHeightInPixels / 2);
                     c = center + new Vector2(TriangleWidthInPixels, TriangleHeightInPixels / 2);
+                    Raylib.DrawPixelV(a * Scale, Color.BLACK);
                 }
                 else
                 {
@@ -176,16 +204,53 @@ public class TriangleLife
                 }
                 if (GetPixel(_drawField, i,j))
                 {
-                    Raylib.DrawTriangle(a, b, c, Color.BLACK);
+                    Raylib.DrawTriangle(a * Scale, b * Scale, c * Scale, Color.BLACK);
                 }
                 else
                 {
                     
                     // Raylib.DrawTriangleLines(a, b, c, Color.BLACK);
                 }
+                
             }
         }
             
+    }
+
+    public (int, int)? DrawCursor(Vector2 pos)
+    {
+        float yf = pos.Y / TriangleHeightInPixels/Scale;
+        int y = (int)MathF.Floor(yf);
+        int x = (int)MathF.Floor(pos.X / TriangleWidthInPixels / Scale - 0.5f);
+        
+        if (x >= Width || y >= Height) return null;
+
+        Vector2 center = new Vector2(TriangleWidthInPixels + x * TriangleWidthInPixels,
+            TriangleHeightInPixels / 2 + y * TriangleHeightInPixels);
+        Vector2 a, b, c;
+        if ((x + y) % 2 == 0)
+        {
+            a = center + new Vector2(0, -TriangleHeightInPixels / 2);
+            b = center + new Vector2(-TriangleWidthInPixels, TriangleHeightInPixels / 2);
+            c = center + new Vector2(TriangleWidthInPixels, TriangleHeightInPixels / 2);
+        }
+        else
+        {
+            a = center + new Vector2(0, TriangleHeightInPixels / 2);
+            b = center + new Vector2(TriangleWidthInPixels, -TriangleHeightInPixels / 2);
+            c = center + new Vector2(-TriangleWidthInPixels, -TriangleHeightInPixels / 2);
+        }
+
+        Raylib.DrawTriangle(a * Scale, b * Scale, c * Scale, new Color(0,255, 0, 120));
+        return (x, y);
+    }
+
+    public void FlipPixel(int i, int j)
+    {
+        int index = i * Height + j;
+        int wordIndex = index / 32;
+        int bitIndex = index % 32;
+        _drawField[wordIndex] ^= (1u << bitIndex);
     }
 
 
@@ -238,18 +303,33 @@ public class TriangleLife
         }
 
         Flip();
+        Generation++;
     }
 
     
     public void MatrixStep()
     {
-        Array.Fill(_backField, (byte)0);
-        
-         
-        for (int j = 0; j < Height; j++)
+        Array.Fill(_backField, 0u);
+
+        int index = (GetTwoPixels(_drawField, 0, 0) << 4) |
+                    (GetTwoPixels(_drawField, 1, 0) << 1);
+        for (int i = 0; i < Width; i++)
+        {
+            index <<= 3;
+            index |= (GetTwoPixels(_drawField, i + 2, 0) << 1);
+            index &= 0x7FFF;
+            index |= (i & 1) << 15;
+
+            if ((SolveMatrix[index >> 3] & (1 << (index & 0x7))) != 0)
+            {
+                SetPixel(_backField, i, 0);
+            }
+        }
+
+        for (int j = 1; j < Height - 1; j++)
         {
 
-            int index = (GetThreePixels(_drawField, 0, j-1) << 3) |
+            index = (GetThreePixels(_drawField, 0, j-1) << 3) |
                         (GetThreePixels(_drawField, 1, j-1) );
             for (int i = 0; i < Width; i++)
             {
@@ -258,62 +338,105 @@ public class TriangleLife
                 index &= 0x7FFF;
                 index |= ((i + j) & 1) << 15;
                 
-                int byteIndex = index / 8;
-                int bitIndex = index % 8;
-                if ((_solveMatrix[byteIndex] & (1 << bitIndex)) != 0)
+                if ((SolveMatrix[index >> 3] & (1 << (index & 0x7))) != 0)
                 {
                     SetPixel(_backField, i, j);
                 }
             }
         }
+        index = (GetTwoPixels(_drawField, 0, Height - 2) << 3) |
+                (GetTwoPixels(_drawField, 1, Height - 2));
+        for (int i = 0; i < Width; i++)
+        {
+            index <<= 3;
+            index |= (GetTwoPixels(_drawField, i + 2, Height - 2));
+            index &= 0x7FFF;
+            index |= ((i + Height - 1) & 1) << 15;
 
+            if ((SolveMatrix[index >> 3] & (1 << (index & 0x7))) != 0)
+            {
+                SetPixel(_backField, i, Height - 1);
+            }
+        }
         Flip();
+        Generation++;
     }
+
 
 
 
     public void ParallelStep()
     {
         Array.Fill(_backField, (byte)0);
-        Parallel.For(0, Height, (j) =>
+
+        int index = (GetTwoPixels(_drawField, 0, 0) << 4) |
+                    (GetTwoPixels(_drawField, 1, 0) << 1);
+        for (int i = 0; i < Width; i++)
         {
-            int index = (GetThreePixels(_drawField, 0, j - 1) << 3) |
-                        (GetThreePixels(_drawField, 1, j - 1));
+            index <<= 3;
+            index |= (GetTwoPixels(_drawField, i + 2, 0) << 1);
+            index &= 0x7FFF;
+            index |= (i & 1) << 15;
+
+            if ((SolveMatrix[index >> 3] & (1 << (index & 0x7))) != 0)
+            {
+                SetPixel(_backField, i, 0);
+            }
+        }
+
+        Parallel.For(1, Height-1, (j) =>
+        {
+            int indexParallel = (GetThreePixels(_drawField, 0, j - 1) << 3) |
+                                (GetThreePixels(_drawField, 1, j - 1));
             for (int i = 0; i < Width; i++)
             {
-                index <<= 3;
-                index |= (GetThreePixels(_drawField, i + 2, j - 1));
-                index &= 0x7FFF;
-                index |= ((i + j) & 1) << 15;
+                indexParallel <<= 3;
+                indexParallel |= GetThreePixels(_drawField, i + 2, j - 1);
+                indexParallel &= 0x7FFF;
+                indexParallel |= ((i + j) & 1) << 15;
 
-                int byteIndex = index / 8;
-                int bitIndex = index % 8;
-                if ((_solveMatrix[byteIndex] & (1 << bitIndex)) != 0)
+                if ((SolveMatrix[indexParallel >> 3] & (1 << (indexParallel & 0x7))) != 0)
                 {
                     SetPixel(_backField, i, j);
                 }
             }
         });
+        index = (GetTwoPixels(_drawField, 0, Height - 2) << 3) |
+                (GetTwoPixels(_drawField, 1, Height - 2));
+        for (int i = 0; i < Width; i++)
+        {
+            index <<= 3;
+            index |= (GetTwoPixels(_drawField, i + 2, Height - 2));
+            index &= 0x7FFF;
+            index |= ((i + Height - 1) & 1) << 15;
 
+            if ((SolveMatrix[index >> 3] & (1 << (index & 0x7))) != 0)
+            {
+                SetPixel(_backField, i, Height - 1);
+            }
+        }
         Flip();
+        Generation++;
     }
-
-
-   
+    
     public void NaiveBenchmark()
     {
         Step();
+        Flip();
     }
 
     [Benchmark]
     public void MatrixBenchmark()
     {
         MatrixStep();
+        Flip();
     }
 
     [Benchmark]
     public void ParallelBenchmark()
     {
         ParallelStep();
+        Flip(); 
     }
+
 }
