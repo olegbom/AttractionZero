@@ -63,8 +63,8 @@ public class TriangleLife
 
 
 
-    private byte[] _backField;
-    private byte[] _drawField;
+    private uint[] _backField;
+    private uint[] _drawField;
 
     public readonly float TriangleWidthInPixels = 41f/5;
     public readonly float TriangleHeightInPixels = 71f/5;
@@ -83,53 +83,71 @@ public class TriangleLife
     {
         Width = width;
         Height = height;
-        int numberOfBytes = (int)((width * height) / 8);
-        if ((width * height) % 8 != 0)
-            numberOfBytes += 1;
+        int numberOfWords = (int)((width * height) / 32);
+        if ((width * height) % 32 != 0)
+            numberOfWords += 1;
 
-        _backField = new byte[numberOfBytes];
-        _drawField = new byte[numberOfBytes];
-        Random.Shared.NextBytes(_backField);
+        _backField = new uint[numberOfWords];
+        _drawField = new uint[numberOfWords];
+        unsafe
+        {
+            fixed (uint* ptr = _backField)
+            {
+                Random.Shared.NextBytes(new Span<byte>(ptr, numberOfWords * 4));
+            }
+        }
+        
         _backField.CopyTo(_drawField, 0);
     }
 
     private void Flip() => (_drawField, _backField) = (_backField, _drawField);
 
-    private bool GetPixel(byte[] field, int i, int j)
+    public void Reset()
+    {
+        unsafe
+        {
+            fixed (uint* ptr = _drawField)
+            {
+                Random.Shared.NextBytes(new Span<byte>(ptr, _drawField.Length * 4));
+            }
+        }
+    }
+
+    private bool GetPixel(uint[] field, int i, int j)
     {
         if (i < 0 || i >= Width || j < 0 || j >= Height)
             return false;
         int index = i * Height + j;
-        int byteIndex = index / 8;
-        int bitIndex = index % 8;
-        return (field[byteIndex] & (1 << bitIndex)) != 0;
+        int wordIndex = index / 32;
+        int bitIndex = index % 32;
+        return (field[wordIndex] & (1 << bitIndex)) != 0;
     }
 
     
-    private void SetPixel(byte[] field, int i, int j)
+    private void SetPixel(uint[] field, int i, int j)
     {
         int index = i * Height + j;
-        int byteIndex = index / 8;
-        int bitIndex = index % 8;
-        field[byteIndex] |= (byte)(1 << bitIndex);
+        int wordIndex = index / 32;
+        int bitIndex = index % 32;
+        Interlocked.Or(ref field[wordIndex], (1u << bitIndex));
     }
 
-    private int GetThreePixels(byte[] field, int si, int sj)
+    private int GetThreePixels(uint[] field, int si, int sj)
     {
         if (si < 0 || si >= Width) return 0;
 
         int startIndex = sj + si * Height;
-        int startByte = (sj < 0) ? 0 : field[startIndex / 8];
-        int startBitIndex = startIndex % 8;
-        if (startBitIndex < 6)
+        uint startByte = (sj < 0) ? 0 : field[startIndex / 32];
+        int startBitIndex = startIndex % 32;
+        if (startBitIndex < 30)
         {
-            return (startByte >> startBitIndex) & 0b111;
+            return (int)((startByte >> startBitIndex) & 0b111);
         }
         else
         {
             int stopIndex = sj + 2 + si * Height;
-            int stopByte = (sj + 2 >= Height) ? 0 : field[stopIndex / 8];
-            return ((stopByte << (8 - startBitIndex)) & 0b110) | (startByte >> startBitIndex);
+            uint stopByte = (sj + 2 >= Height) ? 0 : field[stopIndex / 32];
+            return (int)(((stopByte << (32 - startBitIndex)) & 0b110) | (startByte >> startBitIndex));
         }
     }
 
@@ -170,13 +188,10 @@ public class TriangleLife
             
     }
 
-    public void Reset()
-    {
-        Random.Shared.NextBytes(_drawField);
-    }
+
     public void Step()
     {
-        Array.Fill(_backField, (byte)0);
+        Array.Fill(_backField, 0u);
         for (int i = 0; i < Width; i++)
         {
             for (int j = 0; j < Height; j++)
@@ -256,7 +271,7 @@ public class TriangleLife
     }
 
 
-    private object _lockobject = new object();
+
     public void ParallelStep()
     {
         Array.Fill(_backField, (byte)0);
@@ -275,10 +290,7 @@ public class TriangleLife
                 int bitIndex = index % 8;
                 if ((_solveMatrix[byteIndex] & (1 << bitIndex)) != 0)
                 {
-                    lock (_lockobject)
-                    {
-                        SetPixel(_backField, i, j);
-                    }
+                    SetPixel(_backField, i, j);
                 }
             }
         });
@@ -287,7 +299,7 @@ public class TriangleLife
     }
 
 
-    [Benchmark]
+   
     public void NaiveBenchmark()
     {
         Step();
