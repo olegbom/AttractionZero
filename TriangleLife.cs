@@ -271,6 +271,10 @@ public class TriangleLife
         return (x, y);
     }
 
+    private List<TriangleRotateAnimation> _rotationAnimations = new List<TriangleRotateAnimation>();
+    private List<(int,int)> _nascentAnimations = new List<(int, int)>();
+    private List<(int, int)> _dyingAnimations = new List<(int, int)>();
+    private List<(int, int)> _unchangedAnimations = new List<(int, int)>();
     public void AnimationPreparation()
     {
         uint[] deadCells = new uint[_backField.Length];
@@ -279,11 +283,12 @@ public class TriangleLife
             deadCells[i] = _backField[i] & (~_drawField[i]);
         }
 
-        List<TriangleRotateAnimation> Animations = new List<TriangleRotateAnimation>();
-        
+        _rotationAnimations.Clear();
+        _nascentAnimations.Clear();
+        _dyingAnimations.Clear();
         void CreateAnimation(int i, int j, int rotPoint, int nOfTurns)
         {
-            Animations.Add(new TriangleRotateAnimation(i,j, rotPoint, nOfTurns));
+            _rotationAnimations.Add(new TriangleRotateAnimation(i,j, rotPoint, nOfTurns));
             ResetPixel(deadCells, i, j);
         }
 
@@ -296,9 +301,9 @@ public class TriangleLife
                 {
                     if ((i + j) % 2 == 0)
                     {
-                        if      (GetPixel(deadCells, i + 1, j    )) CreateAnimation(i + 1, j    , 2,  1);
-                        else if (GetPixel(deadCells, i    , j + 1)) CreateAnimation(i    , j + 1, 1,  1);
-                        else if (GetPixel(deadCells, i - 1, j    )) CreateAnimation(i - 1, j    , 0,  1);
+                        if      (GetPixel(deadCells, i + 1, j    )) CreateAnimation(i + 1, j    , 2, -1);
+                        else if (GetPixel(deadCells, i - 1, j    )) CreateAnimation(i - 1, j    , 0, -1);
+                        else if (GetPixel(deadCells, i    , j + 1)) CreateAnimation(i    , j + 1, 1, -1);
                         else if (GetPixel(deadCells, i - 1, j - 1)) CreateAnimation(i - 1, j - 1, 1,  2);
                         else if (GetPixel(deadCells, i + 1, j - 1)) CreateAnimation(i + 1, j - 1, 2, -2);
                         else if (GetPixel(deadCells, i - 2, j    )) CreateAnimation(i - 2, j    , 1, -2);
@@ -308,6 +313,7 @@ public class TriangleLife
                         else if (GetPixel(deadCells, i    , j - 1)) CreateAnimation(i    , j - 1, 1, -3);
                         else if (GetPixel(deadCells, i - 2, j + 1)) CreateAnimation(i - 2, j + 1, 0, -3);
                         else if (GetPixel(deadCells, i + 2, j + 1)) CreateAnimation(i + 2, j + 1, 2, -3);
+                        else _nascentAnimations.Add((i,j));
                     }
                     else
                     {
@@ -323,62 +329,103 @@ public class TriangleLife
                         else if (GetPixel(deadCells, i    , j + 1)) CreateAnimation(i    , j + 1, 0, -3);
                         else if (GetPixel(deadCells, i - 2, j - 1)) CreateAnimation(i - 2, j - 1, 1, -3);
                         else if (GetPixel(deadCells, i + 2, j - 1)) CreateAnimation(i + 2, j - 1, 2, -3);
+                        else _nascentAnimations.Add((i, j));
                     }
+
                 }
             }
         }
 
+        for (int i = 0; i < Width; i++)
+        {
+            for (int j = 0; j < Height; j++)
+            {
+                if (GetPixel(deadCells, i, j))
+                    _dyingAnimations.Add((i, j));
+            }
+        }
     }
 
     public void DrawAnimation(float t)
     {
         Raylib.DrawRectangle(0, 0, (int)(TriangleWidthInPixels * Scale * (Width + 1)),
             (int)(TriangleHeightInPixels * Scale * (Height)), Color.SKYBLUE);
+        Vector2 a, b, c;
+
+        void CalculateTriangle(int i, int j)
+        {
+            Vector2 center = new Vector2(TriangleWidthInPixels + i * TriangleWidthInPixels,
+                TriangleHeightInPixels / 2 + j * TriangleHeightInPixels);
+            if ((i + j) % 2 == 0)
+            {
+                a = center + new Vector2(0, -TriangleHeightInPixels / 2);
+                b = center + new Vector2(-TriangleWidthInPixels, TriangleHeightInPixels / 2);
+                c = center + new Vector2(TriangleWidthInPixels, TriangleHeightInPixels / 2);
+            }
+            else
+            {
+                a = center + new Vector2(0, TriangleHeightInPixels / 2);
+                b = center + new Vector2(TriangleWidthInPixels, -TriangleHeightInPixels / 2);
+                c = center + new Vector2(-TriangleWidthInPixels, -TriangleHeightInPixels / 2);
+            }
+        }
+
         for (int i = 0; i < Width; i++)
         {
             for (int j = 0; j < Height; j++)
             {
-                
-                Vector2 center = new Vector2(TriangleWidthInPixels + i * TriangleWidthInPixels,
-                                                 TriangleHeightInPixels / 2 + j * TriangleHeightInPixels);
-                Vector2 a, b, c;
-
                 if ((i + j) % 2 == 0)
                 {
-                    a = center + new Vector2(0, -TriangleHeightInPixels / 2);
-                    b = center + new Vector2(-TriangleWidthInPixels, TriangleHeightInPixels / 2);
-                    c = center + new Vector2(TriangleWidthInPixels, TriangleHeightInPixels / 2);
+                    CalculateTriangle(i, j);
                     Raylib.DrawTriangleLines(a * Scale, b * Scale, c * Scale, Color.BLACK);
                 }
 
-                bool isOld = GetPixel(_backField, i, j);
-                bool isNew = GetPixel(_drawField, i, j);
-
-                if (isOld || isNew)
+                if (GetPixel(_backField, i, j) &&
+                    GetPixel(_drawField, i, j))
                 {
-                    float size = 1.0f;
-                    if (isOld && !isNew)
-                        size = 1 - t;
-                    else if (!isOld && isNew)
-                        size = t;
-
-                    if ((i + j) % 2 == 0)
-                    {
-                        a = center + new Vector2(0, -TriangleHeightInPixels / 2);
-                        b = center + new Vector2(-TriangleWidthInPixels, TriangleHeightInPixels / 2);
-                        c = center + new Vector2(TriangleWidthInPixels, TriangleHeightInPixels / 2);
-                    }
-                    else
-                    {
-                        a = center + new Vector2(0, TriangleHeightInPixels / 2);
-                        b = center + new Vector2(TriangleWidthInPixels, -TriangleHeightInPixels / 2);
-                        c = center + new Vector2(-TriangleWidthInPixels, -TriangleHeightInPixels / 2);
-                    }
-                    
-                    Raylib.DrawTriangle(a * Scale, b * Scale, c * Scale, new Color(0,0,0, (int)(size*255)));
-                    
+                    CalculateTriangle(i, j);
+                    Raylib.DrawTriangle(a * Scale, b * Scale, c * Scale, Color.BLACK);
                 }
+
             }
+        }
+
+        foreach (var (i, j) in _dyingAnimations)
+        {
+            CalculateTriangle(i, j);
+            Raylib.DrawTriangle(a * Scale, b * Scale, c * Scale, new Color(0, 0, 0, (int)((1-t) * 255)));
+        }
+
+        foreach (var (i,j) in _nascentAnimations)
+        {
+            CalculateTriangle(i, j);
+            Raylib.DrawTriangle(a * Scale, b * Scale, c * Scale, new Color(0, 0, 0, (int)(t * 255)));
+        }
+
+        Span<Vector2> v = stackalloc Vector2[3]; 
+        foreach (var ra in _rotationAnimations)
+        {
+            CalculateTriangle(ra.Column, ra.Row);
+            
+            if ((ra.Column + ra.Row) % 2 == 0)
+            {
+                v[0] = a;
+                v[1] = c;
+                v[2] = b;
+            }
+            else
+            {
+                v[0] = b;
+                v[1] = a;
+                v[2] = c;
+            }
+            var m = Matrix3x2.CreateRotation(-MathF.PI / 3 * ra.NumberOfTurns * t, v[ra.RotationPointNumber]);
+            for (int i = 0; i < 3; i++)
+            {
+                v[i] = Vector2.Transform(v[i], m);
+            }
+
+            Raylib.DrawTriangle(v[0] * Scale, v[2] * Scale, v[1] * Scale, Color.BLACK);
         }
     }
 

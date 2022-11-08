@@ -52,7 +52,9 @@ namespace AttractionZero
                 if (animationCounter != 0)
                 {
                     animationCounter--;
-                    ts.DrawAnimation(1.0f - (float)animationCounter/animationFramesMax);
+                    float t = 1.0f - (float)animationCounter / animationFramesMax;
+                    float t2 = t * t;
+                    ts.DrawAnimation(t*t2*(6*t2 - 15*t + 10));
                 }
                 else
                 {
