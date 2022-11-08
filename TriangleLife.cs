@@ -279,10 +279,12 @@ public class TriangleLife
             deadCells[i] = _backField[i] & (~_drawField[i]);
         }
 
-        /*List<TriangleAnimation> Animations = new List<TriangleAnimation>();
-        void CreateAnimation(int i, int j)
+        List<TriangleRotateAnimation> Animations = new List<TriangleRotateAnimation>();
+        
+        void CreateAnimation(int i, int j, int rotPoint, int nOfTurns)
         {
-
+            Animations.Add(new TriangleRotateAnimation(i,j, rotPoint, nOfTurns));
+            ResetPixel(deadCells, i, j);
         }
 
         for (int i = 0; i < Width; i++)
@@ -294,42 +296,37 @@ public class TriangleLife
                 {
                     if ((i + j) % 2 == 0)
                     {
-                        if (GetPixel(deadCells, i + 1, j)) s += 12;
-                        if (GetPixel(deadCells, i, j + 1)) s += 12;
-                        if (GetPixel(deadCells, i - 1, j)) s += 12;
-                        
-
-                        if (GetPixel(deadCells, i - 1, j - 1)) s += 4;
-                        if (GetPixel(deadCells, i + 1, j - 1)) s += 4;
-                        if (GetPixel(deadCells, i - 2, j)) s += 4;
-                        if (GetPixel(deadCells, i + 2, j)) s += 4;
-                        if (GetPixel(deadCells, i - 1, j + 1)) s += 4;
-                        if (GetPixel(deadCells, i + 1, j + 1)) s += 4;
-
-                        if (GetPixel(deadCells, i, j - 1)) s += 3;
-                        if (GetPixel(deadCells, i - 2, j + 1)) s += 3;
-                        if (GetPixel(deadCells, i + 2, j + 1)) s += 3;
+                        if      (GetPixel(deadCells, i + 1, j    )) CreateAnimation(i + 1, j    , 2,  1);
+                        else if (GetPixel(deadCells, i    , j + 1)) CreateAnimation(i    , j + 1, 1,  1);
+                        else if (GetPixel(deadCells, i - 1, j    )) CreateAnimation(i - 1, j    , 0,  1);
+                        else if (GetPixel(deadCells, i - 1, j - 1)) CreateAnimation(i - 1, j - 1, 1,  2);
+                        else if (GetPixel(deadCells, i + 1, j - 1)) CreateAnimation(i + 1, j - 1, 2, -2);
+                        else if (GetPixel(deadCells, i - 2, j    )) CreateAnimation(i - 2, j    , 1, -2);
+                        else if (GetPixel(deadCells, i + 2, j    )) CreateAnimation(i + 2, j    , 2,  2);
+                        else if (GetPixel(deadCells, i - 1, j + 1)) CreateAnimation(i - 1, j + 1, 0,  2);
+                        else if (GetPixel(deadCells, i + 1, j + 1)) CreateAnimation(i + 1, j + 1, 0, -2);
+                        else if (GetPixel(deadCells, i    , j - 1)) CreateAnimation(i    , j - 1, 1, -3);
+                        else if (GetPixel(deadCells, i - 2, j + 1)) CreateAnimation(i - 2, j + 1, 0, -3);
+                        else if (GetPixel(deadCells, i + 2, j + 1)) CreateAnimation(i + 2, j + 1, 2, -3);
                     }
                     else
                     {
-                        if (GetPixel(deadCells, i, j - 1)) s += 12;
-                        if (GetPixel(deadCells, i - 1, j)) s += 12;
-                        if (GetPixel(deadCells, i + 1, j)) s += 12;
-
-                        if (GetPixel(deadCells, i - 1, j - 1)) s += 4;
-                        if (GetPixel(deadCells, i + 1, j - 1)) s += 4;
-                        if (GetPixel(deadCells, i - 2, j)) s += 4;
-                        if (GetPixel(deadCells, i + 2, j)) s += 4;
-                        if (GetPixel(deadCells, i - 1, j + 1)) s += 4;
-                        if (GetPixel(deadCells, i + 1, j + 1)) s += 4;
-
-                        if (GetPixel(deadCells, i, j + 1)) s += 3;
-                        if (GetPixel(deadCells, i - 2, j - 1)) s += 3;
-                        if (GetPixel(deadCells, i + 2, j - 1)) s += 3;
+                        if      (GetPixel(deadCells, i    , j - 1)) CreateAnimation(i    , j - 1, 1,  1);
+                        else if (GetPixel(deadCells, i - 1, j    )) CreateAnimation(i - 1, j    , 0,  1);
+                        else if (GetPixel(deadCells, i + 1, j    )) CreateAnimation(i + 1, j    , 2,  1);
+                        else if (GetPixel(deadCells, i - 1, j - 1)) CreateAnimation(i - 1, j - 1, 1, -2);
+                        else if (GetPixel(deadCells, i + 1, j - 1)) CreateAnimation(i + 1, j - 1, 1,  2);
+                        else if (GetPixel(deadCells, i - 2, j    )) CreateAnimation(i - 2, j    , 0,  2);
+                        else if (GetPixel(deadCells, i + 2, j    )) CreateAnimation(i + 2, j    , 2, -2);
+                        else if (GetPixel(deadCells, i - 1, j + 1)) CreateAnimation(i - 1, j + 1, 0, -2);
+                        else if (GetPixel(deadCells, i + 1, j + 1)) CreateAnimation(i + 1, j + 1, 0,  2);
+                        else if (GetPixel(deadCells, i    , j + 1)) CreateAnimation(i    , j + 1, 0, -3);
+                        else if (GetPixel(deadCells, i - 2, j - 1)) CreateAnimation(i - 2, j - 1, 1, -3);
+                        else if (GetPixel(deadCells, i + 2, j - 1)) CreateAnimation(i + 2, j - 1, 2, -3);
                     }
                 }
             }
-        }*/
+        }
 
     }
 

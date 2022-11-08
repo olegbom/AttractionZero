@@ -26,8 +26,9 @@ namespace AttractionZero
             {
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_S))
                 {
-                    animationCounter = animationFramesMax;
                     ts.MatrixStep();
+                    ts.AnimationPreparation();
+                    animationCounter = animationFramesMax;
                 }
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_P)) isEveryFrame = !isEveryFrame;
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_SPACE)) ts.Reset();
