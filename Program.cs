@@ -11,14 +11,17 @@ namespace AttractionZero
         {
             //var summary = BenchmarkRunner.Run<TriangleLife>();
 
-            TriangleLife ts = new(24, 12);
-            
+            TriangleLife ts = new(71, 41)
+            {
+                Scale = 0.55f
+            };
             Raylib.SetConfigFlags(ConfigFlags.FLAG_MSAA_4X_HINT);
 
             Raylib.InitWindow(1600, 1000, "Hello World");
             Raylib.SetTargetFPS(60);
             
             bool isEveryFrame = false;
+            bool isAnimatedEveryFrame = true;
             const int animationFramesMax = 60;
             int animationCounter = 0;
 
@@ -31,6 +34,7 @@ namespace AttractionZero
                     animationCounter = animationFramesMax;
                 }
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_P)) isEveryFrame = !isEveryFrame;
+                if (Raylib.IsKeyPressed(KeyboardKey.KEY_A)) isAnimatedEveryFrame = !isAnimatedEveryFrame;
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_SPACE)) ts.Reset();
 
                 if (isEveryFrame)
@@ -55,10 +59,17 @@ namespace AttractionZero
                     float t = 1.0f - (float)animationCounter / animationFramesMax;
                     float t2 = t * t;
                     ts.DrawAnimation(t*t2*(6*t2 - 15*t + 10));
+                    //ts.DrawAnimation(t);
                 }
                 else
                 {
                     ts.Draw();
+                    if (!isEveryFrame && isAnimatedEveryFrame)
+                    {
+                        ts.MatrixStep();
+                        ts.AnimationPreparation();
+                        animationCounter = animationFramesMax;
+                    }
                 }
 
 
@@ -77,11 +88,12 @@ namespace AttractionZero
                 
                 Raylib.DrawText($"Generation: {ts.Generation}", 1300, 770, 25, Color.BLACK);
                 Raylib.DrawText("S - 1 Step", 1300, 800, 25, Color.BLACK);
-                Raylib.DrawText("P - Step Every Frame on/off", 1300, 830, 25, Color.BLACK);
-                Raylib.DrawText("Space - Reset", 1300, 860, 25, Color.BLACK);
-                Raylib.DrawText("LMB - Set Cell", 1300, 890, 25, Color.BLACK);
-                Raylib.DrawText("RMB - Reset Cell", 1300, 920, 25, Color.BLACK);
-                Raylib.DrawFPS(1500, 960);
+                Raylib.DrawText("P - Step Every Frame", 1300, 830, 25, Color.BLACK);
+                Raylib.DrawText("A - Animation Every Frame", 1300, 860, 25, Color.BLACK);
+                Raylib.DrawText("Space - Reset", 1300, 890, 25, Color.BLACK);
+                Raylib.DrawText("LMB - Set Cell", 1300, 920, 25, Color.BLACK);
+                Raylib.DrawText("RMB - Reset Cell", 1300, 950, 25, Color.BLACK);
+                Raylib.DrawFPS(1500, 980);
                 
                 Raylib.EndDrawing();
             }

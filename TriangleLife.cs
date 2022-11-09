@@ -69,8 +69,8 @@ public class TriangleLife
 
 
 
-    public readonly float TriangleWidthInPixels = 41f;
-    public readonly float TriangleHeightInPixels = 71f;
+    public readonly float TriangleWidthInPixels = 41f/MathF.Sqrt(3);
+    public readonly float TriangleHeightInPixels = 41f;
 
 
     public int Width { get; }
@@ -210,7 +210,7 @@ public class TriangleLife
                     a = center + new Vector2(0, -TriangleHeightInPixels / 2);
                     b = center + new Vector2(-TriangleWidthInPixels, TriangleHeightInPixels / 2);
                     c = center + new Vector2(TriangleWidthInPixels, TriangleHeightInPixels / 2);
-                    Raylib.DrawTriangleLines(a * Scale, b * Scale, c * Scale, Color.BLACK);
+                    //Raylib.DrawTriangleLines(a * Scale, b * Scale, c * Scale, Color.BLACK);
                 }
                 else
                 {
@@ -301,9 +301,9 @@ public class TriangleLife
                 {
                     if ((i + j) % 2 == 0)
                     {
-                        if      (GetPixel(deadCells, i + 1, j    )) CreateAnimation(i + 1, j    , 2, -1);
-                        else if (GetPixel(deadCells, i - 1, j    )) CreateAnimation(i - 1, j    , 0, -1);
-                        else if (GetPixel(deadCells, i    , j + 1)) CreateAnimation(i    , j + 1, 1, -1);
+                        if      (GetPixel(deadCells, i    , j + 1)) CreateAnimation(i    , j + 1, 0, -1);
+                        else if (GetPixel(deadCells, i + 1, j    )) CreateAnimation(i + 1, j    , 2, -1);
+                        else if (GetPixel(deadCells, i - 1, j    )) CreateAnimation(i - 1, j    , 1, -1);
                         else if (GetPixel(deadCells, i - 1, j - 1)) CreateAnimation(i - 1, j - 1, 1,  2);
                         else if (GetPixel(deadCells, i + 1, j - 1)) CreateAnimation(i + 1, j - 1, 2, -2);
                         else if (GetPixel(deadCells, i - 2, j    )) CreateAnimation(i - 2, j    , 1, -2);
@@ -317,15 +317,15 @@ public class TriangleLife
                     }
                     else
                     {
-                        if      (GetPixel(deadCells, i    , j - 1)) CreateAnimation(i    , j - 1, 1,  1);
-                        else if (GetPixel(deadCells, i - 1, j    )) CreateAnimation(i - 1, j    , 0,  1);
-                        else if (GetPixel(deadCells, i + 1, j    )) CreateAnimation(i + 1, j    , 2,  1);
+                        if      (GetPixel(deadCells, i - 1, j    )) CreateAnimation(i - 1, j    , 1, -1);
+                        else if (GetPixel(deadCells, i + 1, j    )) CreateAnimation(i + 1, j    , 0, -1);
+                        else if (GetPixel(deadCells, i    , j - 1)) CreateAnimation(i    , j - 1, 2, -1);
                         else if (GetPixel(deadCells, i - 1, j - 1)) CreateAnimation(i - 1, j - 1, 1, -2);
                         else if (GetPixel(deadCells, i + 1, j - 1)) CreateAnimation(i + 1, j - 1, 1,  2);
                         else if (GetPixel(deadCells, i - 2, j    )) CreateAnimation(i - 2, j    , 0,  2);
                         else if (GetPixel(deadCells, i + 2, j    )) CreateAnimation(i + 2, j    , 2, -2);
                         else if (GetPixel(deadCells, i - 1, j + 1)) CreateAnimation(i - 1, j + 1, 0, -2);
-                        else if (GetPixel(deadCells, i + 1, j + 1)) CreateAnimation(i + 1, j + 1, 0,  2);
+                        else if (GetPixel(deadCells, i + 1, j + 1)) CreateAnimation(i + 1, j + 1, 2,  2);
                         else if (GetPixel(deadCells, i    , j + 1)) CreateAnimation(i    , j + 1, 0, -3);
                         else if (GetPixel(deadCells, i - 2, j - 1)) CreateAnimation(i - 2, j - 1, 1, -3);
                         else if (GetPixel(deadCells, i + 2, j - 1)) CreateAnimation(i + 2, j - 1, 2, -3);
@@ -374,11 +374,11 @@ public class TriangleLife
         {
             for (int j = 0; j < Height; j++)
             {
-                if ((i + j) % 2 == 0)
-                {
-                    CalculateTriangle(i, j);
-                    Raylib.DrawTriangleLines(a * Scale, b * Scale, c * Scale, Color.BLACK);
-                }
+                //if ((i + j) % 2 == 0)
+                //{
+                //    CalculateTriangle(i, j);
+                //    Raylib.DrawTriangleLines(a * Scale, b * Scale, c * Scale, Color.BLACK);
+                //}
 
                 if (GetPixel(_backField, i, j) &&
                     GetPixel(_drawField, i, j))
