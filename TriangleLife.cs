@@ -1,10 +1,13 @@
 ﻿using System.Collections;
 using System.Numerics;
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Jobs;
 using Raylib_cs;
 
 namespace AttractionZero;
 
+[SimpleJob(RuntimeMoniker.Net60)]
+[SimpleJob(RuntimeMoniker.Net70)]
 public class TriangleLife
 {
     private static readonly byte[] SolveMatrix;
@@ -192,6 +195,42 @@ public class TriangleLife
         }
     }
 
+    public void SetRandomRectangleAlternative(double x, double y, double width, double height, double pho = 0.5) =>
+        SetRandomRectangle((int)(Width * x), (int)(Height * y), (int)(Width * width), (int)(Height * height), pho);
+
+    public void SetRandomRectangle(int x, int y, int width, int height, double rho = 0.5f)
+    {
+        if (x < 0)
+        {
+            width += x;
+            x = 0;
+        }
+        else if (x >= Width)
+            return;
+
+        if (y < 0)
+        {
+            height += y;
+            y = 0;
+        }
+        else if (y >= Height) 
+            return;
+
+        if (x + width > Width) width = Width - x;
+        if (y + height > Height) height = Height - y;
+        Array.Fill(_drawField, 0u);
+        for (int i = x; i < x + width; i++)
+        {
+            for (int j = y; j < y + height; j++)
+            {
+                if (Random.Shared.NextDouble() < rho)
+                {
+                    SetPixel(_drawField, i, j);
+                }
+            }
+        }
+
+    }
 
     public void Draw()
     {
@@ -229,7 +268,6 @@ public class TriangleLife
                 
             }
         }
-            
     }
 
     public (int, int)? DrawCursor(Vector2 pos)
@@ -275,6 +313,7 @@ public class TriangleLife
     private List<(int,int)> _nascentAnimations = new List<(int, int)>();
     private List<(int, int)> _dyingAnimations = new List<(int, int)>();
     private List<(int, int)> _unchangedAnimations = new List<(int, int)>();
+
     public void AnimationPreparation()
     {
         uint[] deadCells = new uint[_backField.Length];
@@ -602,7 +641,7 @@ public class TriangleLife
         Flip();
         Generation++;
     }
-    
+
     public void NaiveBenchmark()
     {
         Step();
@@ -622,5 +661,4 @@ public class TriangleLife
         ParallelStep();
         Flip(); 
     }
-
 }

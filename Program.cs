@@ -9,11 +9,11 @@ namespace AttractionZero
     {
         static void Main(string[] args)
         {
-            //var summary = BenchmarkRunner.Run<TriangleLife>();
+           // var summary = BenchmarkRunner.Run<TriangleLife>();
 
-            TriangleLife ts = new(71, 41)
+            TriangleLife ts = new(71*3, 41*3)
             {
-                Scale = 0.55f
+                Scale = 0.55f/3
             };
             Raylib.SetConfigFlags(ConfigFlags.FLAG_MSAA_4X_HINT);
 
@@ -35,6 +35,10 @@ namespace AttractionZero
                 }
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_P)) isEveryFrame = !isEveryFrame;
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_A)) isAnimatedEveryFrame = !isAnimatedEveryFrame;
+                if (Raylib.IsKeyPressed(KeyboardKey.KEY_R))
+                {
+                    ts.SetRandomRectangleAlternative(0.3, 0.3, 0.4, 0.4);
+                }
                 if (Raylib.IsKeyPressed(KeyboardKey.KEY_SPACE)) ts.Reset();
 
                 if (isEveryFrame)
